@@ -191,6 +191,9 @@ func (repo *Repository) ResolveURL(c *gin.Context) {
 	urlDataMap := map[string]string{}
 
 	shortUrl := c.Param("url")
+	if shortUrl == ""{
+		shortUrl = c.Query("url")
+	}
 	var redirURL string
 
 	val, err := repo.ShortUrlDBClient.Get(urlNamekey).Result()
