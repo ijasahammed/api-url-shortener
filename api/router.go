@@ -35,4 +35,5 @@ func InitializeApp(app *gin.Engine) {
 func (repo *Repository) SetupRoutes(app *gin.Engine) {
 	app.POST("/shorten", repo.ShortenURL)
 	app.GET("/host-count", repo.GetHostCount)
+	app.GET("/:url", repo.ResolveURL)
 }

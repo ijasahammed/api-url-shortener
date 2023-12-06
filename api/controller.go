@@ -4,7 +4,6 @@ import (
 	"api-url-shortener/database"
 	"api-url-shortener/internal/helpers"
 	"encoding/json"
-	"fmt"
 	"os"
 	"sort"
 
@@ -43,7 +42,6 @@ func (repo *Repository) ShortenURL(c *gin.Context) {
 	// Host based count
 	val, err := repo.ShortUrlDBClient.Get(hostNameKey).Result()
 	if err != nil && err != redis.Nil {
-		fmt.Println(err)
 		c.JSON(400, gin.H{"Error": "Get host based count error"})
 		return
 	}
@@ -101,7 +99,7 @@ func (repo *Repository) ShortenURL(c *gin.Context) {
 			}
 		}
 	}
-	urlDataMap[body.Url] = id
+	urlDataMap[id] = body.Url
 	urlDataJson, err := json.Marshal(urlDataMap)
 	if err != nil {
 		c.JSON(400, gin.H{"Error": "Json Marshal error"})
@@ -130,7 +128,6 @@ func (repo *Repository) ShortenURL(c *gin.Context) {
 func (repo *Repository) GetHostCount(c *gin.Context) {
 	val, err := repo.ShortUrlDBClient.Get(hostNameKey).Result()
 	if err != nil && err != redis.Nil {
-		fmt.Println(err)
 		c.JSON(400, gin.H{"Error": "Get host based count error"})
 		return
 	}
@@ -171,4 +168,37 @@ func (repo *Repository) GetHostCount(c *gin.Context) {
 	}
 	c.JSON(200, resp)
 
+}
+
+func (repo *Repository) ResolveURL(c *gin.Context) {
+	urlDataMap := map[string]string{}
+
+	shortUrl := c.Param("url")
+	var redirURL string
+
+	val, err := repo.ShortUrlDBClient.Get(urlNamekey).Result()
+	if err != nil && err != redis.Nil {
+		c.JSON(400, gin.H{"Error": "connect error redis"})
+		return
+	}
+	if val != "" {
+		err = json.Unmarshal([]byte(val), &urlDataMap)
+		if err != nil {
+			c.JSON(400, gin.H{"Error": "Json Unmarshal error"})
+			return
+		}
+		if _, exists := urlDataMap[shortUrl]; !exists {
+			c.JSON(404, gin.H{
+				"Error": "No URL mapped to this short URL",
+			})
+			return
+		}
+		redirURL = urlDataMap[shortUrl]
+	} else {
+		c.JSON(404, gin.H{
+			"Error": "No URL mapped to this short URL",
+		})
+		return
+	}
+	c.Redirect(301, redirURL)
 }
