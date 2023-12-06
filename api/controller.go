@@ -35,14 +35,14 @@ func (repo *Repository) ShortenURL(c *gin.Context) {
 	// Handle domain error
 	valid, host := helpers.RemoveDomainError(body.Url)
 	if !valid {
-		c.JSON(400, gin.H{"Error": "Remove domain error"})
+		c.JSON(400, gin.H{"Error": "URL is already short one"})
 		return
 	}
 
 	// Host based count
 	val, err := repo.ShortUrlDBClient.Get(hostNameKey).Result()
 	if err != nil && err != redis.Nil {
-		c.JSON(400, gin.H{"Error": "Get host based count error"})
+		c.JSON(400, gin.H{"Error": "Unable to connect to the database"})
 		return
 	}
 
@@ -53,7 +53,7 @@ func (repo *Repository) ShortenURL(c *gin.Context) {
 	if val != "" {
 		err = json.Unmarshal([]byte(val), &hostCountMap)
 		if err != nil {
-			c.JSON(400, gin.H{"Error": "Json Unmarshal error"})
+			c.JSON(400, gin.H{"Error": "Data conversion error"})
 			return
 		}
 		if countInt, exists := hostCountMap[host]; exists {
@@ -63,14 +63,14 @@ func (repo *Repository) ShortenURL(c *gin.Context) {
 	hostCountMap[host] = count
 	hostCountJson, err := json.Marshal(hostCountMap)
 	if err != nil {
-		c.JSON(400, gin.H{"Error": "Json Marshal error"})
+		c.JSON(400, gin.H{"Error": "Data conversion error"})
 		return
 	}
 
 	err = repo.ShortUrlDBClient.Set(hostNameKey, hostCountJson, 0).Err()
 
 	if err != nil {
-		c.JSON(400, gin.H{"Error": "Set host based count error"})
+		c.JSON(400, gin.H{"Error": "Unable to connect to the database"})
 		return
 	}
 
@@ -84,13 +84,13 @@ func (repo *Repository) ShortenURL(c *gin.Context) {
 
 	val, err = repo.ShortUrlDBClient.Get(urlNamekey).Result()
 	if err != nil && err != redis.Nil {
-		c.JSON(400, gin.H{"Error": "Get host based count error"})
+		c.JSON(400, gin.H{"Error": "Unable to connect to the database"})
 		return
 	}
 	if val != "" {
 		err = json.Unmarshal([]byte(val), &urlDataMap)
 		if err != nil {
-			c.JSON(400, gin.H{"Error": "Json Unmarshal error"})
+			c.JSON(400, gin.H{"Error": "Data conversion error"})
 			return
 		}
 		for {
@@ -102,7 +102,7 @@ func (repo *Repository) ShortenURL(c *gin.Context) {
 	urlDataMap[id] = body.Url
 	urlDataJson, err := json.Marshal(urlDataMap)
 	if err != nil {
-		c.JSON(400, gin.H{"Error": "Json Marshal error"})
+		c.JSON(400, gin.H{"Error": "Data conversion error"})
 		return
 	}
 
@@ -128,7 +128,7 @@ func (repo *Repository) ShortenURL(c *gin.Context) {
 func (repo *Repository) GetHostCount(c *gin.Context) {
 	val, err := repo.ShortUrlDBClient.Get(hostNameKey).Result()
 	if err != nil && err != redis.Nil {
-		c.JSON(400, gin.H{"Error": "Get host based count error"})
+		c.JSON(400, gin.H{"Error": "Unable to connect to the database"})
 		return
 	}
 
@@ -137,7 +137,7 @@ func (repo *Repository) GetHostCount(c *gin.Context) {
 	if val != "" {
 		err = json.Unmarshal([]byte(val), &hostCountMap)
 		if err != nil {
-			c.JSON(400, gin.H{"Error": "Json Unmarshal error"})
+			c.JSON(400, gin.H{"Error": "Data conversion error"})
 			return
 		}
 	}
@@ -184,7 +184,7 @@ func (repo *Repository) ResolveURL(c *gin.Context) {
 	if val != "" {
 		err = json.Unmarshal([]byte(val), &urlDataMap)
 		if err != nil {
-			c.JSON(400, gin.H{"Error": "Json Unmarshal error"})
+			c.JSON(400, gin.H{"Error": "Data conversion error"})
 			return
 		}
 		if _, exists := urlDataMap[shortUrl]; !exists {
