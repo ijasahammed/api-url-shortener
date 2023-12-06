@@ -1,8 +1,11 @@
 package helpers
 
 import (
+	"encoding/json"
 	"os"
 	"strings"
+
+	"github.com/go-redis/redis"
 )
 
 // EnforceHTTP enforces the use of "http://" prefix for a URL if not present.
@@ -28,4 +31,30 @@ func RemoveDomainError(url string) (bool, string) {
 	}
 
 	return true, newURL
+}
+
+func CheckURLAlreadyExists(client *redis.Client, url, key string) (bool, string, error) {
+
+	urlDataMap := map[string]string{}
+	var orgUrl string
+
+	val, err := client.Get(key).Result()
+	if err != nil && err != redis.Nil {
+		return false, "", err
+	}
+	if val != "" {
+		err = json.Unmarshal([]byte(val), &urlDataMap)
+		if err != nil {
+			return false, "", err
+		}
+		for key, val := range urlDataMap {
+			if val == url {
+				orgUrl = key
+			}
+		}
+	} else {
+		return false, "", nil
+	}
+	return true, orgUrl, nil
+
 }

@@ -4,6 +4,7 @@ import (
 	"api-url-shortener/database"
 	"api-url-shortener/internal/helpers"
 	"encoding/json"
+	"fmt"
 	"os"
 	"sort"
 
@@ -81,6 +82,25 @@ func (repo *Repository) ShortenURL(c *gin.Context) {
 
 	// Enforce HTTPS
 	body.Url = helpers.EnforceHTTP(body.Url)
+
+	exists, oldID, err := helpers.CheckURLAlreadyExists(repo.ShortUrlDBClient, body.Url, urlNamekey)
+
+	fmt.Println(exists, oldID, err)
+
+	if err != nil {
+		c.JSON(400, gin.H{"Error": "Internal problem when checking already exists"})
+		return
+	}
+	if exists {
+		resp := database.Response{
+			URL:              body.Url,
+			CustomedShortURL: "",
+		}
+		resp.CustomedShortURL = os.Getenv("SHORT_BASE_URL") + "/" + oldID
+
+		c.JSON(200, resp)
+		return
+	}
 
 	val, err = repo.ShortUrlDBClient.Get(urlNamekey).Result()
 	if err != nil && err != redis.Nil {
