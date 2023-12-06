@@ -1,8 +1,9 @@
 package main
 
 import (
-	"github.com/gin-gonic/gin"
 	"api-url-shortener/api"
+
+	"github.com/gin-gonic/gin"
 )
 
 func main() {

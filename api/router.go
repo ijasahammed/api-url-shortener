@@ -1,19 +1,20 @@
 package api
 
 import (
-	"os"
 	"log"
+	"os"
+
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis"
 
-	"github.com/joho/godotenv"
 	"api-url-shortener/database"
 
+	"github.com/joho/godotenv"
 )
 
 type Repository struct {
 	ShortUrlDBClient  *redis.Client
-	HostCountDBClient  *redis.Client
+	HostCountDBClient *redis.Client
 }
 
 func InitializeApp(app *gin.Engine) {
@@ -27,12 +28,11 @@ func InitializeApp(app *gin.Engine) {
 
 	repo := Repository{
 		ShortUrlDBClient:  shortUrlClient,
-		HostCountDBClient:  hostCountDBClient,
-		
+		HostCountDBClient: hostCountDBClient,
 	}
 
 	repo.SetupRoutes(app)
-	log.Fatal(app.Run(":"+os.Getenv("PORT")))
+	log.Fatal(app.Run(":" + os.Getenv("PORT")))
 }
 
 func (repo *Repository) SetupRoutes(app *gin.Engine) {

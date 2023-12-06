@@ -1,14 +1,15 @@
 package api
 
 import (
-	"os"
+	"api-url-shortener/database"
+	"api-url-shortener/internal/helpers"
 	"fmt"
+	"os"
 	"strconv"
+
 	"github.com/asaskevich/govalidator"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"api-url-shortener/database"
-	"api-url-shortener/internal/helpers"
 )
 
 func (repo *Repository) ShortenURL(c *gin.Context) {
@@ -29,34 +30,34 @@ func (repo *Repository) ShortenURL(c *gin.Context) {
 	}
 
 	// Handle domain error
-	valid,host := helpers.RemoveDomainError(body.Url)
+	valid, host := helpers.RemoveDomainError(body.Url)
 	if !valid {
 		c.JSON(400, gin.H{"Error": "Remove domain error"})
 	}
 
-	val,err := repo.HostCountDBClient.Get(host).Result()
+	val, err := repo.HostCountDBClient.Get(host).Result()
 	if err != nil {
 		c.JSON(400, gin.H{"Error": "Get host based count error"})
 	}
 
 	count := 0
 
-	if val == ""{
+	if val == "" {
 		count = 0
-	}else{
-		countInt,_ := strconv.Atoi(val)
+	} else {
+		countInt, _ := strconv.Atoi(val)
 		count = countInt + 1
 	}
-	err = repo.HostCountDBClient.Set(host, count,0).Err()
+	err = repo.HostCountDBClient.Set(host, count, 0).Err()
 
-	fmt.Println(host,count)
+	fmt.Println(host, count)
 
 	id := uuid.New().String()[:6]
 
 	// Enforce HTTPS
 	body.Url = helpers.EnforceHTTP(body.Url)
 
-	err = repo.ShortUrlDBClient.Set(id, body.Url,0).Err()
+	err = repo.ShortUrlDBClient.Set(id, body.Url, 0).Err()
 	if err != nil {
 		c.JSON(500, gin.H{
 			"Error": "Unable to connect to the database",

@@ -13,9 +13,9 @@ func EnforceHTTP(url string) string {
 	return url
 }
 
-func RemoveDomainError(url string) (bool,string) {
+func RemoveDomainError(url string) (bool, string) {
 	if url == os.Getenv("SHORT_BASE_URL") {
-		return false,""
+		return false, ""
 	}
 	newURL := strings.Replace(url, "http://", "", 1)
 	newURL = strings.Replace(newURL, "https://", "", 1)
@@ -24,8 +24,8 @@ func RemoveDomainError(url string) (bool,string) {
 	newURL = strings.Split(newURL, "/")[0]
 
 	if newURL == os.Getenv("SHORT_BASE_URL") {
-		return false,""
+		return false, ""
 	}
 
-	return true,newURL
+	return true, newURL
 }

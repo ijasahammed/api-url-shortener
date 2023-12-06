@@ -10,12 +10,12 @@ import (
 var Ctx = context.Background()
 
 type Request struct {
-	Url      string        `json:"url"`
+	Url string `json:"url"`
 }
 
 type Response struct {
-	URL              string        `json:"url"`
-	CustomedShortURL string        `json:"short_url"`
+	URL              string `json:"url"`
+	CustomedShortURL string `json:"short_url"`
 }
 
 func CreateClient(dbNo int) *redis.Client {
