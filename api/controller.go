@@ -50,7 +50,9 @@ func (repo *Repository) ShortenURL(c *gin.Context) {
 	}
 	err = repo.HostCountDBClient.Set(host, count, 0).Err()
 
-	fmt.Println(host, count)
+	if err != nil {
+		c.JSON(400, gin.H{"Error": "Set host based count error"})
+	}
 
 	id := uuid.New().String()[:6]
 
@@ -74,4 +76,8 @@ func (repo *Repository) ShortenURL(c *gin.Context) {
 	resp.CustomedShortURL = os.Getenv("SHORT_BASE_URL") + "/" + id
 
 	c.JSON(200, resp)
+}
+
+func (repo *Repository) GetHostCount(c *gin.Context) {
+
 }
