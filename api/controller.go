@@ -4,7 +4,6 @@ import (
 	"api-url-shortener/database"
 	"api-url-shortener/internal/helpers"
 	"encoding/json"
-	"fmt"
 	"os"
 	"sort"
 
@@ -84,8 +83,6 @@ func (repo *Repository) ShortenURL(c *gin.Context) {
 	body.Url = helpers.EnforceHTTP(body.Url)
 
 	exists, oldID, err := helpers.CheckURLAlreadyExists(repo.ShortUrlDBClient, body.Url, urlNamekey)
-
-	fmt.Println(exists, oldID, err)
 
 	if err != nil {
 		c.JSON(400, gin.H{"Error": "Internal problem when checking already exists"})
