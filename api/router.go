@@ -13,8 +13,7 @@ import (
 )
 
 type Repository struct {
-	ShortUrlDBClient  *redis.Client
-	HostCountDBClient *redis.Client
+	ShortUrlDBClient *redis.Client
 }
 
 func InitializeApp(app *gin.Engine) {
@@ -24,11 +23,9 @@ func InitializeApp(app *gin.Engine) {
 	}
 
 	shortUrlClient := database.CreateClient(0)
-	hostCountDBClient := database.CreateClient(1)
 
 	repo := Repository{
-		ShortUrlDBClient:  shortUrlClient,
-		HostCountDBClient: hostCountDBClient,
+		ShortUrlDBClient: shortUrlClient,
 	}
 
 	repo.SetupRoutes(app)
@@ -37,4 +34,5 @@ func InitializeApp(app *gin.Engine) {
 
 func (repo *Repository) SetupRoutes(app *gin.Engine) {
 	app.POST("/shorten", repo.ShortenURL)
+	app.GET("/host-count", repo.GetHostCount)
 }

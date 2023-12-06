@@ -3,14 +3,18 @@ package api
 import (
 	"api-url-shortener/database"
 	"api-url-shortener/internal/helpers"
+	"encoding/json"
 	"fmt"
 	"os"
-	"strconv"
+	"sort"
 
 	"github.com/asaskevich/govalidator"
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis"
 	"github.com/google/uuid"
 )
+
+var hostNameKey, urlNamekey = "host_count", "url_data"
 
 func (repo *Repository) ShortenURL(c *gin.Context) {
 
@@ -19,7 +23,6 @@ func (repo *Repository) ShortenURL(c *gin.Context) {
 		c.JSON(500, gin.H{
 			"Error": err,
 		})
-		fmt.Println(err)
 
 		return
 	}
@@ -27,39 +30,85 @@ func (repo *Repository) ShortenURL(c *gin.Context) {
 	// Check if the input URL is a valid URL
 	if !govalidator.IsURL(body.Url) {
 		c.JSON(400, gin.H{"Error": "Invalid URL"})
+		return
 	}
 
 	// Handle domain error
 	valid, host := helpers.RemoveDomainError(body.Url)
 	if !valid {
 		c.JSON(400, gin.H{"Error": "Remove domain error"})
+		return
 	}
 
-	val, err := repo.HostCountDBClient.Get(host).Result()
-	if err != nil {
+	// Host based count
+	val, err := repo.ShortUrlDBClient.Get(hostNameKey).Result()
+	if err != nil && err != redis.Nil {
+		fmt.Println(err)
 		c.JSON(400, gin.H{"Error": "Get host based count error"})
+		return
 	}
 
-	count := 0
+	count := 1
 
-	if val == "" {
-		count = 0
-	} else {
-		countInt, _ := strconv.Atoi(val)
-		count = countInt + 1
+	hostCountMap := map[string]int{}
+
+	if val != "" {
+		err = json.Unmarshal([]byte(val), &hostCountMap)
+		if err != nil {
+			c.JSON(400, gin.H{"Error": "Json Unmarshal error"})
+			return
+		}
+		if countInt, exists := hostCountMap[host]; exists {
+			count = countInt + 1
+		}
 	}
-	err = repo.HostCountDBClient.Set(host, count, 0).Err()
+	hostCountMap[host] = count
+	hostCountJson, err := json.Marshal(hostCountMap)
+	if err != nil {
+		c.JSON(400, gin.H{"Error": "Json Marshal error"})
+		return
+	}
+
+	err = repo.ShortUrlDBClient.Set(hostNameKey, hostCountJson, 0).Err()
 
 	if err != nil {
 		c.JSON(400, gin.H{"Error": "Set host based count error"})
+		return
 	}
+
+	// url data
+	urlDataMap := map[string]string{}
 
 	id := uuid.New().String()[:6]
 
 	// Enforce HTTPS
 	body.Url = helpers.EnforceHTTP(body.Url)
 
-	err = repo.ShortUrlDBClient.Set(id, body.Url, 0).Err()
+	val, err = repo.ShortUrlDBClient.Get(urlNamekey).Result()
+	if err != nil && err != redis.Nil {
+		c.JSON(400, gin.H{"Error": "Get host based count error"})
+		return
+	}
+	if val != "" {
+		err = json.Unmarshal([]byte(val), &urlDataMap)
+		if err != nil {
+			c.JSON(400, gin.H{"Error": "Json Unmarshal error"})
+			return
+		}
+		for {
+			if _, exists := urlDataMap[host]; !exists {
+				break
+			}
+		}
+	}
+	urlDataMap[body.Url] = id
+	urlDataJson, err := json.Marshal(urlDataMap)
+	if err != nil {
+		c.JSON(400, gin.H{"Error": "Json Marshal error"})
+		return
+	}
+
+	err = repo.ShortUrlDBClient.Set(urlNamekey, urlDataJson, 0).Err()
 	if err != nil {
 		c.JSON(500, gin.H{
 			"Error": "Unable to connect to the database",
@@ -79,5 +128,47 @@ func (repo *Repository) ShortenURL(c *gin.Context) {
 }
 
 func (repo *Repository) GetHostCount(c *gin.Context) {
+	val, err := repo.ShortUrlDBClient.Get(hostNameKey).Result()
+	if err != nil && err != redis.Nil {
+		fmt.Println(err)
+		c.JSON(400, gin.H{"Error": "Get host based count error"})
+		return
+	}
+
+	hostCountMap := map[string]int{}
+
+	if val != "" {
+		err = json.Unmarshal([]byte(val), &hostCountMap)
+		if err != nil {
+			c.JSON(400, gin.H{"Error": "Json Unmarshal error"})
+			return
+		}
+	}
+
+	// Create slice of key-value sortData
+	sortData := make([][2]interface{}, 0, len(hostCountMap))
+	for k, v := range hostCountMap {
+		sortData = append(sortData, [2]interface{}{k, v})
+	}
+
+	// Sort slice based on values
+	sort.Slice(sortData, func(i, j int) bool {
+		return sortData[i][1].(int) < sortData[j][1].(int)
+	})
+
+	if len(sortData) > 3 {
+		sortData = sortData[:3]
+	}
+
+	returnData := map[string]int{}
+
+	for _, key := range sortData {
+		returnData[key[0].(string)] = key[1].(int)
+	}
+
+	resp := database.CountResponse{
+		Data: returnData,
+	}
+	c.JSON(200, resp)
 
 }
