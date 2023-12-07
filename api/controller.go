@@ -191,7 +191,7 @@ func (repo *Repository) ResolveURL(c *gin.Context) {
 	urlDataMap := map[string]string{}
 
 	shortUrl := c.Param("url")
-	if shortUrl == ""{
+	if shortUrl == "" {
 		shortUrl = c.Query("url")
 	}
 	var redirURL string
