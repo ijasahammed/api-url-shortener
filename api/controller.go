@@ -167,7 +167,7 @@ func (repo *Repository) GetHostCount(c *gin.Context) {
 
 	// Sort slice based on values
 	sort.Slice(sortData, func(i, j int) bool {
-		return sortData[i][1].(int) < sortData[j][1].(int)
+		return sortData[i][1].(int) > sortData[j][1].(int)
 	})
 
 	if len(sortData) > 3 {
