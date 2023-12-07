@@ -55,6 +55,9 @@ func CheckURLAlreadyExists(client *redis.Client, url, key string) (bool, string,
 	} else {
 		return false, "", nil
 	}
+	if orgUrl == "" {
+		return false, "", nil
+	}
 	return true, orgUrl, nil
 
 }
